@@ -1,36 +1,32 @@
+# server.py
 from flask import Flask, request, jsonify
-import random
+import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 
-# Store data from devices
-device_data = {}
+# Store data (for demonstration purposes)
+traffic_data = []
 
 
-@app.route('/data', methods=['POST'])
-def receive_data():
+@app.route('/traffic', methods=['POST'])
+def handle_traffic():
     data = request.json
-    device_id = data['device_id']
-    device_data[device_id] = {
-        "vehicle_count": data['vehicle_count'],
-        "air_quality": data['air_quality']
-    }
-    return jsonify({"message": "Data received"}), 200
+    vehicle_count = data.get('vehicle_count')
+    air_quality = data.get('air_quality')
+
+    # Process data
+    traffic_data.append((vehicle_count, air_quality))
+    response = calculate_signal_times(vehicle_count)
+    return jsonify(response)
 
 
-@app.route('/signal', methods=['GET'])
-def send_signal():
-    # Example signal calculation
-    total_vehicles = sum(d["vehicle_count"] for d in device_data.values())
-    green_time = [round((d["vehicle_count"] / total_vehicles) * 30) for d in device_data.values()]
-
-    signal = {
-        "red_time": 30 - max(green_time),
-        "yellow_time": 3,
-        "green_time": max(green_time)
-    }
-    return jsonify(signal), 200
+def calculate_signal_times(vehicle_count):
+    # Logic to determine signal times based on vehicle count
+    red_light_time = max(10, vehicle_count * 2)
+    green_light_time = min(120, max(20, 120 - vehicle_count))
+    return {'red': red_light_time, 'green': green_light_time}
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
